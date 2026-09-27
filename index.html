@@ -23,8 +23,8 @@
             </ul>
             <div class="sidebar-section">Architectures</div>
             <ul class="sidebar-nav">
-                <li><a href="docs.html#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd)</a></li>
-                <li><a href="docs.html#maitre"><span class="icon">&#9679;</span> SIREN (Maitre)</a></li>
+                <li><a href="docs.html#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd et al.)</a></li>
+                <li><a href="docs.html#maitre"><span class="icon">&#9679;</span> SIREN (Maître et al.)</a></li>
                 <li><a href="docs.html#wire"><span class="icon">&#9679;</span> WIRE</a></li>
                 <li><a href="docs.html#kan"><span class="icon">&#9679;</span> KAN</a></li>
                 <li><a href="docs.html#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
@@ -45,9 +45,9 @@
 
             <div class="grid-2">
                 <div class="card">
-                    <h3>Two Approaches</h3>
-                    <p><strong>Lloyd et al.</strong> — Approximate the <em>integrand</em> with a shallow MLP, then integrate the network analytically using polylogarithms.</p>
-                    <p><strong>Maitre et al.</strong> — Train a network to approximate the <em>antiderivative</em>, then evaluate at hypercube corners with an alternating-sign sum.</p>
+                    <h3>Two Methods</h3>
+                    <p><strong>Lloyd et al. (2020)</strong> — Approximate the <em>integrand</em> with a shallow MLP (sigmoid activation), then integrate the network analytically using polylogarithms. The integral becomes a closed-form expression evaluation.</p>
+                    <p><strong>Maître et al. (2022)</strong> — Train a network to approximate the <em>antiderivative</em>, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed.</p>
                 </div>
                 <div class="card">
                     <h3>Five Architectures</h3>
@@ -58,27 +58,27 @@
             <h3 style="margin: 1.5rem 0 1rem;">Supported Architectures</h3>
             <div class="grid-3">
                 <div class="arch-card">
-                    <div class="tag">Phase 1 — Lloyd</div>
+                    <div class="tag">Lloyd et al.</div>
                     <h3>MLP</h3>
                     <p>Classic multilayer perceptron with sigmoid activation. Approximates the integrand; integration via polylogarithms.</p>
                 </div>
                 <div class="arch-card">
-                    <div class="tag">Phase 2 — Maitre</div>
+                    <div class="tag">Maître et al.</div>
                     <h3>SIREN</h3>
                     <p>Sinusoidal representation network. Approximates the antiderivative; evaluated via corner-sum over the unit hypercube.</p>
                 </div>
                 <div class="arch-card">
-                    <div class="tag">Phase 2 — Maitre</div>
+                    <div class="tag">Maître et al.</div>
                     <h3>WIRE</h3>
                     <p>Wavelet implicit neural representation using complex Gabor/Morlet wavelet activations with Gaussian envelope.</p>
                 </div>
                 <div class="arch-card">
-                    <div class="tag">Phase 2 — Maitre</div>
+                    <div class="tag">Maître et al.</div>
                     <h3>KAN</h3>
                     <p>Kolmogorov-Arnold Network with learnable B-spline basis functions on each edge. Stable higher-order autograd.</p>
                 </div>
                 <div class="arch-card">
-                    <div class="tag">Phase 2 — Maitre</div>
+                    <div class="tag">Maître et al.</div>
                     <h3>BrokNet</h3>
                     <p>Mixture-of-experts ensemble. Each SIREN expert is trained exclusively on one parameter set; deterministic routing.</p>
                 </div>
@@ -116,6 +116,14 @@ result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
                     <li>Analytic integration via polylogarithms (Lloyd) or corner sums (Maitre)</li>
                     <li>Parametric integrands supported via <code>theta</code> / <code>param_sets</code></li>
                     <li>All architectures share the same <code>train()</code> / <code>integrate()</code> API</li>
+                </ul>
+            </div>
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>References</h3>
+                <p style="font-size: 0.9rem;">The two methods used in this library are described in:</p>
+                <ul style="font-size: 0.9rem; color: var(--text-secondary); margin-left: 1.5rem;">
+                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
+                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
                 </ul>
             </div>
         </main>

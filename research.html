@@ -31,10 +31,10 @@
 
             <div class="page-content">
                 <h3>Research Goal</h3>
-                <p>The project investigates whether neural networks can compute definite integrals of complex, multi-dimensional integrands more efficiently than traditional quadrature methods. Two complementary approaches are explored:</p>
+                <p>The project investigates whether neural networks can compute definite integrals of complex, multi-dimensional integrands more efficiently than traditional quadrature methods. Two fundamentally different approaches are explored:</p>
                 <ul>
-                    <li><strong>Lloyd et al.</strong> — Approximate the integrand with a shallow MLP, then integrate the network analytically using polylogarithms. This reduces integration to a closed-form expression evaluation.</li>
-                    <li><strong>Maitre et al.</strong> — Train a network to approximate the antiderivative directly, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed.</li>
+                    <li><strong>Lloyd et al. (2020)</strong> — Approximate the integrand with a shallow MLP (sigmoid activation), then integrate the network analytically using polylogarithms. The integral becomes a closed-form expression evaluation. This is particularly efficient when the same integrand must be evaluated over many different domains or parameter values, as the expensive training is done once and the evaluation is fast.</li>
+                    <li><strong>Maître et al. (2022)</strong> — Train a network to approximate the antiderivative directly, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed. The antiderivative is typically smoother than the integrand, making it easier for the network to approximate.</li>
                 </ul>
 
                 <h3>Physics Integrand</h3>
@@ -96,6 +96,12 @@
                     <li><strong>Epochs:</strong> 5000-8000</li>
                     <li><strong>Samples per parameter set:</strong> 512-1024</li>
                     <li><strong>Gradient clipping:</strong> max_norm 3.0-5.0</li>
+                </ul>
+
+                <h3>References</h3>
+                <ul>
+                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
+                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
                 </ul>
             </div>
         </main>

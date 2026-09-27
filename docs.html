@@ -22,8 +22,8 @@
             </ul>
             <div class="sidebar-section">Architectures</div>
             <ul class="sidebar-nav">
-                <li><a href="#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd)</a></li>
-                <li><a href="#maitre"><span class="icon">&#9679;</span> SIREN (Maitre)</a></li>
+                <li><a href="#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd et al.)</a></li>
+                <li><a href="#maitre"><span class="icon">&#9679;</span> SIREN (Maître et al.)</a></li>
                 <li><a href="#wire"><span class="icon">&#9679;</span> WIRE</a></li>
                 <li><a href="#kan"><span class="icon">&#9679;</span> KAN</a></li>
                 <li><a href="#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
@@ -87,8 +87,8 @@ X_scaled, y_scaled = scale_data(X, y, frange=(0, 1))
 # ... train and integrate ...
 result = descale_result(nni_scaled, X, y, frange=(0, 1), n_dim=4, n_int_dims=3)</code></pre>
 
-                <h3 id="lloyd">Phase 1: MLP (Lloyd et al.)</h3>
-                <p>Approximate the <em>integrand</em> with a shallow MLP, then integrate analytically using polylogarithms.</p>
+                <h3 id="lloyd">MLP — Lloyd et al. Method</h3>
+                <p>This method approximates the <em>integrand</em> itself with a shallow multilayer perceptron (sigmoid activation). Once trained, the network is integrated analytically using polylogarithms — the integral becomes a closed-form expression evaluation rather than a numerical quadrature. This is particularly efficient when the same integrand must be evaluated over many different domains or parameter values, as the expensive training is done once and the evaluation is fast.</p>
                 <pre><code>from skuld import (generate_data, scale_data, split_data,
                     init_model, NeuralNumericalIntegration, descale_result)
 
@@ -119,8 +119,8 @@ result = NeuralNumericalIntegration.integrate(
 true_result = descale_result(result, X_init, y_init, frange=(0,1), n_dim=3)</code></pre>
                 <p>Supported optimizers: <code>adam</code>, <code>adamw</code>, <code>sgd</code>, <code>rmsprop</code>, <code>lbfgs</code>.</p>
 
-                <h3 id="maitre">Phase 2: SIREN (Maitre et al.)</h3>
-                <p>Train a SIREN to approximate the <em>antiderivative</em>, then evaluate at hypercube corners.</p>
+                <h3 id="maitre">SIREN — Maître et al. Method</h3>
+                <p>This method takes a fundamentally different approach: instead of approximating the integrand, a SIREN (Sinusoidal Representation Network) is trained to approximate the <em>antiderivative</em> of the integrand. The network learns a function whose mixed partial derivatives match the integrand. Once trained, the integral is evaluated as an alternating-sign sum over the corners of the unit hypercube — no quadrature mesh is needed. The sinusoidal activation functions are particularly well-suited for this task because they can represent smooth, oscillatory functions and their derivatives are easy to compute via autograd.</p>
                 <pre><code>from skuld.siren import SirenIntegrator
 
 integrator = SirenIntegrator(
@@ -206,7 +206,7 @@ history, norm_cache = integrator.train(
 result = integrator.integrate(0, 0, 1, 2, norm_cache=norm_cache)</code></pre>
 
                 <h3>Common Integrator API</h3>
-                <p>All Phase 2 integrators share the same interface:</p>
+                <p>All Maître et al. method integrators share the same interface:</p>
                 <table>
                     <thead>
                         <tr><th>Method</th><th>Description</th></tr>
@@ -218,6 +218,12 @@ result = integrator.integrate(0, 0, 1, 2, norm_cache=norm_cache)</code></pre>
                     </tbody>
                 </table>
                 <p>The <code>integrand_fn</code> signature is always <code>f(u: torch.Tensor, *params) -> torch.Tensor</code> where <code>u</code> has shape <code>(N, n_int_vars)</code>.</p>
+
+                <h3>References</h3>
+                <ul>
+                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
+                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
+                </ul>
             </div>
         </main>
     </div>
