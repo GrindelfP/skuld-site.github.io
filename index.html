@@ -33,7 +33,7 @@
 
         <main class="main-content">
             <section class="hero">
-                <h2>Neural Numerical Integration</h2>
+                <h2>Skuld</h2>
                 <p>A Python library that uses neural networks to compute definite integrals analytically — no quadrature, no mesh, just trained weights and corner sums.</p>
                 <div class="hero-badges">
                     <span class="badge badge-blue">Python &ge; 3.11</span>
@@ -88,6 +88,11 @@
                     <p>Five sampling strategies (uniform, grid, log, mixed, exponential) with per-dimension mixing. Min-max scaling for the NNI pipeline.</p>
                 </div>
             </div>
+
+            <h3 style="margin: 1.5rem 0 1rem;">Installation</h3>
+            <pre><code>pip install skuld-lib</code></pre>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Available on <a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">PyPI</a>. Or install from source:</p>
+            <pre><code>pip install -e skuld-lib/</code></pre>
 
             <h3 style="margin: 1.5rem 0 1rem;">Quick Start</h3>
             <pre><code>from skuld.siren import SirenIntegrator

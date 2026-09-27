@@ -45,8 +45,12 @@
 
             <div class="page-content">
                 <h3>Installation</h3>
+                <p>From PyPI (recommended):</p>
+                <pre><code>pip install skuld-lib</code></pre>
+                <p>Or from source:</p>
                 <pre><code>pip install -e skuld-lib/</code></pre>
                 <p>Dependencies: <code>torch</code>, <code>numpy</code>, <code>mpmath</code>, <code>scikit-learn</code>. Python &ge; 3.11 required.</p>
+                <p><a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">View on PyPI</a></p>
 
                 <h3 id="device">Device Selection</h3>
                 <p>Device is selected automatically: CUDA if available, else MPS (Apple Silicon), else CPU. Override with:</p>

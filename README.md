@@ -24,6 +24,12 @@ Five architectures are available under a unified API: MLP, SIREN, WIRE, KAN, and
 ## Installation
 
 ```bash
+pip install skuld-lib
+```
+
+Or from source:
+
+```bash
 pip install -e skuld-lib/
 ```
 
