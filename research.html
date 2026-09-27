@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research — Skuld</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="site-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h1>Skuld</h1>
+                <span>v0.4.0 — Neural Numerical Integration</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="index.html"><span class="icon">&#8962;</span> Home</a></li>
+                <li><a href="docs.html"><span class="icon">&#128214;</span> Documentation</a></li>
+                <li><a href="research.html" class="active"><span class="icon">&#128300;</span> Research</a></li>
+                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
+                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div class="breadcrumb"><a href="index.html">Home</a> &raquo; Research</div>
+                <h2>Research</h2>
+                <p>Physics integrands, methods, and results.</p>
+            </div>
+
+            <div class="page-content">
+                <h3>Research Goal</h3>
+                <p>The project investigates whether neural networks can compute definite integrals of complex, multi-dimensional integrands more efficiently than traditional quadrature methods. Two complementary approaches are explored:</p>
+                <ul>
+                    <li><strong>Lloyd et al.</strong> — Approximate the integrand with a shallow MLP, then integrate the network analytically using polylogarithms. This reduces integration to a closed-form expression evaluation.</li>
+                    <li><strong>Maitre et al.</strong> — Train a network to approximate the antiderivative directly, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed.</li>
+                </ul>
+
+                <h3>Physics Integrand</h3>
+                <p>The test integrand originates from a particle physics amplitude. It depends on three integration variables <code>(u1, u2, u3)</code> mapped to the unit cube <code>[0,1]^3</code> and four discrete parameters <code>(a, b, m, n)</code>:</p>
+                <ul>
+                    <li><code>a, b</code> — exponents on momentum fractions (0 or 1)</li>
+                    <li><code>m, n</code> — exponents on the Feynman parameter <code>t</code> (1 or 2 for m; 2 or 3 for n)</li>
+                </ul>
+                <p>The integrand combines a Korobov smooth mapping for <code>(u1, u2)</code>, a logarithmic substitution for <code>u3</code>, and an exponential damping factor <code>exp(-t*D - t/(1+t)*R2)</code> where <code>D</code> and <code>R2</code> are quadratic forms in the momentum fractions.</p>
+
+                <h3>Parameter Sets</h3>
+                <p>Eight parameter combinations are used as a benchmark suite:</p>
+                <table>
+                    <thead>
+                        <tr><th>a</th><th>b</th><th>m</th><th>n</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0</td><td>0</td><td>1</td><td>2</td></tr>
+                        <tr><td>0</td><td>1</td><td>1</td><td>2</td></tr>
+                        <tr><td>1</td><td>0</td><td>1</td><td>2</td></tr>
+                        <tr><td>1</td><td>1</td><td>1</td><td>2</td></tr>
+                        <tr><td>0</td><td>0</td><td>2</td><td>3</td></tr>
+                        <tr><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+                        <tr><td>1</td><td>0</td><td>2</td><td>3</td></tr>
+                        <tr><td>1</td><td>1</td><td>2</td><td>3</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Coordinate Transformations</h3>
+                <ul>
+                    <li><strong>Korobov mapping:</strong> <code>x = u^2 * (3 - 2u)</code> with Jacobian <code>6u(1-u)</code> — smooth, zero at endpoints.</li>
+                    <li><strong>Logarithmic substitution:</strong> <code>t = exp(L*u3) - 1</code> where <code>L = log(1 + T_MAX)</code>, <code>T_MAX = 80</code> — maps <code>[0,1]</code> to <code>[0, 80]</code>.</li>
+                </ul>
+
+                <h3>Reference Values</h3>
+                <p>Reference integrals are computed with <code>scipy.integrate.quad</code> using nested quadrature with <code>epsabs=epsrel=1e-9</code> and <code>limit=200-300</code>. These serve as ground truth for evaluating neural network accuracy.</p>
+
+                <h3>Results</h3>
+                <p>All architectures are trained on the same integrand and parameter sets. Accuracy is measured as the number of correct digits compared to the scipy reference:</p>
+                <table>
+                    <thead>
+                        <tr><th>Architecture</th><th>Phase</th><th>Typical Correct Digits</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>MLP</td><td>Lloyd (integrand)</td><td>2-4</td></tr>
+                        <tr><td>SIREN</td><td>Maitre (antiderivative)</td><td>3-5</td></tr>
+                        <tr><td>WIRE</td><td>Maitre (antiderivative)</td><td>2-4</td></tr>
+                        <tr><td>KAN</td><td>Maitre (antiderivative)</td><td>2-4</td></tr>
+                        <tr><td>BrokNet</td><td>Maitre (antiderivative)</td><td>3-5</td></tr>
+                    </tbody>
+                </table>
+                <p>SIREN and BrokNet tend to perform best on this integrand due to the sinusoidal activation's ability to represent the oscillatory structure of the antiderivative. The Maitre approach generally outperforms Lloyd for this class of integrands because the antiderivative is smoother than the integrand itself.</p>
+
+                <h3>Training Configuration</h3>
+                <ul>
+                    <li><strong>Optimizer:</strong> Adam (SIREN, KAN, BrokNet) or AdamW (WIRE)</li>
+                    <li><strong>Scheduler:</strong> CosineAnnealingLR or OneCycleLR</li>
+                    <li><strong>Loss:</strong> MSELoss (SIREN, WIRE, BrokNet) or HuberLoss (KAN)</li>
+                    <li><strong>Epochs:</strong> 5000-8000</li>
+                    <li><strong>Samples per parameter set:</strong> 512-1024</li>
+                    <li><strong>Gradient clipping:</strong> max_norm 3.0-5.0</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <p>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
+            &middot;
+            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
+            &middot;
+            <a href="license.html">License</a>
+        </p>
+    </footer>
+</body>
+</html>

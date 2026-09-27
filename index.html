@@ -3,36 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project "Skuld"</title>
+    <title>Skuld — Neural Numerical Integration</title>
+    <meta name="description" content="Skuld is a neural network based numerical integration library supporting both integrand approximation and antiderivative approximation approaches.">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="site-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h1>Skuld</h1>
+                <span>v0.4.0 — Neural Numerical Integration</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="index.html" class="active"><span class="icon">&#8962;</span> Home</a></li>
+                <li><a href="docs.html"><span class="icon">&#128214;</span> Documentation</a></li>
+                <li><a href="research.html"><span class="icon">&#128300;</span> Research</a></li>
+                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
+                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
+            </ul>
+            <div class="sidebar-section">Architectures</div>
+            <ul class="sidebar-nav">
+                <li><a href="docs.html#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd)</a></li>
+                <li><a href="docs.html#maitre"><span class="icon">&#9679;</span> SIREN (Maitre)</a></li>
+                <li><a href="docs.html#wire"><span class="icon">&#9679;</span> WIRE</a></li>
+                <li><a href="docs.html#kan"><span class="icon">&#9679;</span> KAN</a></li>
+                <li><a href="docs.html#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
+            </ul>
+        </aside>
 
-<header>
-    <h1><a href="#">Project "Skuld"</a></h1>
-    <nav>
-        <ul>
-            <li><a href="#description">Description</a></li>
-            <li><a href="docs.html">Docs</a></li>
-            <li><a href="info.html">Info</a></li>
-        </ul>
-    </nav>
-</header>
+        <main class="main-content">
+            <section class="hero">
+                <h2>Neural Numerical Integration</h2>
+                <p>A Python library that uses neural networks to compute definite integrals analytically — no quadrature, no mesh, just trained weights and corner sums.</p>
+                <div class="hero-badges">
+                    <span class="badge badge-blue">Python &ge; 3.11</span>
+                    <span class="badge badge-green">MIT-like License</span>
+                    <span class="badge badge-orange">v0.4.0</span>
+                    <span class="badge badge-purple">5 Architectures</span>
+                </div>
+            </section>
 
-<main>
-    <section id="preamble">
-        <h3>Preamble</h3>
-        <p>Skuld is a Norn (a fate goddess) from Scandinavian mythology. My choice when picking her name as a title for my project as well as (probably) my numerical integration library is dictated by the nature of the goddess: she foretells what should happen the same as a neural network foretells the function for inputted parameters, not calculates it. Also, the reason is that I like Scandinavian mythology very much.</p>
-    </section>
-    <section id="description">
-        <h2>Description</h2>
-        <p>My Bachelor's Degree diploma thesis. The main goal is to implement a numerical integration library for neural network-based numerical integration of complex dimensional functions.</p>
-    </section>
-</main>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Two Approaches</h3>
+                    <p><strong>Lloyd et al.</strong> — Approximate the <em>integrand</em> with a shallow MLP, then integrate the network analytically using polylogarithms.</p>
+                    <p><strong>Maitre et al.</strong> — Train a network to approximate the <em>antiderivative</em>, then evaluate at hypercube corners with an alternating-sign sum.</p>
+                </div>
+                <div class="card">
+                    <h3>Five Architectures</h3>
+                    <p>The library provides a unified API across MLP, SIREN, WIRE, KAN, and BrokNet (mixture-of-experts), so you can switch architectures without changing your experiment code.</p>
+                </div>
+            </div>
 
-<footer>
-    <p>&copy; 2024 GrindelfP | <a href="https://github.com/GrindelfP/project-skuld" target="_blank">Project "Skuld" GitHub</a> | <a href="https://github.com/GrindelfP" target="_blank">GitHub</a> </p>
-</footer>
+            <h3 style="margin: 1.5rem 0 1rem;">Supported Architectures</h3>
+            <div class="grid-3">
+                <div class="arch-card">
+                    <div class="tag">Phase 1 — Lloyd</div>
+                    <h3>MLP</h3>
+                    <p>Classic multilayer perceptron with sigmoid activation. Approximates the integrand; integration via polylogarithms.</p>
+                </div>
+                <div class="arch-card">
+                    <div class="tag">Phase 2 — Maitre</div>
+                    <h3>SIREN</h3>
+                    <p>Sinusoidal representation network. Approximates the antiderivative; evaluated via corner-sum over the unit hypercube.</p>
+                </div>
+                <div class="arch-card">
+                    <div class="tag">Phase 2 — Maitre</div>
+                    <h3>WIRE</h3>
+                    <p>Wavelet implicit neural representation using complex Gabor/Morlet wavelet activations with Gaussian envelope.</p>
+                </div>
+                <div class="arch-card">
+                    <div class="tag">Phase 2 — Maitre</div>
+                    <h3>KAN</h3>
+                    <p>Kolmogorov-Arnold Network with learnable B-spline basis functions on each edge. Stable higher-order autograd.</p>
+                </div>
+                <div class="arch-card">
+                    <div class="tag">Phase 2 — Maitre</div>
+                    <h3>BrokNet</h3>
+                    <p>Mixture-of-experts ensemble. Each SIREN expert is trained exclusively on one parameter set; deterministic routing.</p>
+                </div>
+                <div class="arch-card">
+                    <div class="tag">Infrastructure</div>
+                    <h3>Data &amp; Scaling</h3>
+                    <p>Five sampling strategies (uniform, grid, log, mixed, exponential) with per-dimension mixing. Min-max scaling for the NNI pipeline.</p>
+                </div>
+            </div>
 
+            <h3 style="margin: 1.5rem 0 1rem;">Quick Start</h3>
+            <pre><code>from skuld.siren import SirenIntegrator
+
+# Define integrand in unit cube: f(u, *params)
+def integrand(u, a, b, m, n):
+    # ... your integrand here ...
+    return f
+
+# Create integrator and train
+integrator = SirenIntegrator(n_params=4, n_int_vars=3)
+history, norm_cache = integrator.train(
+    integrand_fn=integrand,
+    param_sets=[(0,0,1,2), (1,1,2,3)],
+    n_epochs=8000,
+)
+
+# Evaluate integral for a specific parameter set
+result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h3>Key Facts</h3>
+                <ul class="feature-list">
+                    <li>Automatic device selection: CUDA, MPS (Apple Silicon), or CPU</li>
+                    <li>No quadrature meshes — integration is a corner-sum evaluation</li>
+                    <li>Analytic integration via polylogarithms (Lloyd) or corner sums (Maitre)</li>
+                    <li>Parametric integrands supported via <code>theta</code> / <code>param_sets</code></li>
+                    <li>All architectures share the same <code>train()</code> / <code>integrate()</code> API</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <p>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
+            &middot;
+            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
+            &middot;
+            <a href="license.html">License</a>
+        </p>
+    </footer>
 </body>
 </html>

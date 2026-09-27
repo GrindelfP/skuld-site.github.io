@@ -3,30 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project "Skuld"</title>
+    <title>Documentation — Skuld</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="site-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h1>Skuld</h1>
+                <span>v0.4.0 — Neural Numerical Integration</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="index.html"><span class="icon">&#8962;</span> Home</a></li>
+                <li><a href="docs.html" class="active"><span class="icon">&#128214;</span> Documentation</a></li>
+                <li><a href="research.html"><span class="icon">&#128300;</span> Research</a></li>
+                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
+                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
+            </ul>
+            <div class="sidebar-section">Architectures</div>
+            <ul class="sidebar-nav">
+                <li><a href="#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd)</a></li>
+                <li><a href="#maitre"><span class="icon">&#9679;</span> SIREN (Maitre)</a></li>
+                <li><a href="#wire"><span class="icon">&#9679;</span> WIRE</a></li>
+                <li><a href="#kan"><span class="icon">&#9679;</span> KAN</a></li>
+                <li><a href="#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
+            </ul>
+            <div class="sidebar-section">API</div>
+            <ul class="sidebar-nav">
+                <li><a href="#data-generation"><span class="icon">&#9679;</span> Data Generation</a></li>
+                <li><a href="#scaling"><span class="icon">&#9679;</span> Scaling</a></li>
+                <li><a href="#device"><span class="icon">&#9679;</span> Device</a></li>
+            </ul>
+        </aside>
 
-<header>
-    <h1><a href="index.html">Project "Skuld"</a></h1>
-    <nav>
-        <ul>
-            <li><a href="#">Docs</a></li>
-            <li><a href="info.html">Info</a></li>
-        </ul>
-    </nav>
-</header>
+        <main class="main-content">
+            <div class="page-header">
+                <div class="breadcrumb"><a href="index.html">Home</a> &raquo; Documentation</div>
+                <h2>Documentation</h2>
+                <p>Complete API reference for the Skuld library.</p>
+            </div>
 
-<main>
-    <section id="one">
-        <h3>There is nothing here for now!&#128513;</h3>
-    </section>
-</main>
+            <div class="page-content">
+                <h3>Installation</h3>
+                <pre><code>pip install -e skuld-lib/</code></pre>
+                <p>Dependencies: <code>torch</code>, <code>numpy</code>, <code>mpmath</code>, <code>scikit-learn</code>. Python &ge; 3.11 required.</p>
 
-<footer>
-    <p>&copy; 2024 GrindelfP | <a href="https://github.com/GrindelfP/project-skuld" target="_blank">Project "Skuld" GitHub</a> | <a href="https://github.com/GrindelfP" target="_blank">GitHub</a> </p>
-</footer>
+                <h3 id="device">Device Selection</h3>
+                <p>Device is selected automatically: CUDA if available, else MPS (Apple Silicon), else CPU. Override with:</p>
+                <pre><code>from skuld import set_global_device
+set_global_device("cpu")   # or "cuda" or "mps"</code></pre>
 
+                <h3 id="data-generation">Data Generation</h3>
+                <p>Five sampling strategies for generating training data:</p>
+                <table>
+                    <thead>
+                        <tr><th>Type</th><th>Description</th><th>n_samples meaning</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>"std"</code></td><td>Uniform random (Monte-Carlo)</td><td>Total rows</td></tr>
+                        <tr><td><code>"grd"</code></td><td>Uniform deterministic grid</td><td>Points per axis</td></tr>
+                        <tr><td><code>"log"</code></td><td>Logarithmically-spaced grid</td><td>Points per axis</td></tr>
+                        <tr><td><code>"mix"</code></td><td>Dense-near-lower + sparse-near-upper</td><td>Points per axis</td></tr>
+                        <tr><td><code>"exp"</code></td><td>Exponentially-biased random</td><td>Total rows</td></tr>
+                    </tbody>
+                </table>
+                <p>Strategies can be mixed per-dimension by passing a list:</p>
+                <pre><code>from skuld import generate_data
+
+X, y = generate_data(
+    dis_type=["std", "std", "exp", "grd"],
+    func=my_integrand,
+    lower=[0.0, 0.0, 0.0, 0.1],
+    upper=[1.0, 1.0, 50.0, 2.0],
+    n_samples=200,
+    n_dim=4,
+)</code></pre>
+
+                <h3 id="scaling">Scaling</h3>
+                <p>Min-max scaling to a known range (default <code>[0, 1]</code>):</p>
+                <pre><code>from skuld import scale_data, descale_result
+
+X_scaled, y_scaled = scale_data(X, y, frange=(0, 1))
+# ... train and integrate ...
+result = descale_result(nni_scaled, X, y, frange=(0, 1), n_dim=4, n_int_dims=3)</code></pre>
+
+                <h3 id="lloyd">Phase 1: MLP (Lloyd et al.)</h3>
+                <p>Approximate the <em>integrand</em> with a shallow MLP, then integrate analytically using polylogarithms.</p>
+                <pre><code>from skuld import (generate_data, scale_data, split_data,
+                    init_model, NeuralNumericalIntegration, descale_result)
+
+# 1. Generate data
+X, y = generate_data("std", func, lower, upper, n_samples=1000, n_dim=3)
+
+# 2. Scale
+X, y = scale_data(X, y, frange=(0, 1))
+
+# 3. Split
+X_train, X_test, y_train, y_test = split_data(X, y, test_size=0.1, shuffle=True)
+
+# 4. Create model
+model = init_model(input_size=3, hidden_size=64)
+
+# 5. Compile
+model.compile(criterion=torch.nn.MSELoss(), optimizer_name="adam", learning_rate=1e-3)
+
+# 6. Train
+model.fit(X_train, y_train, epochs=5000)
+
+# 7. Integrate analytically
+result = NeuralNumericalIntegration.integrate(
+    model, alphas=[0,0,0], betas=[1,1,1], n_dims=3, theta=[0.5]
+)
+
+# 8. Descale
+true_result = descale_result(result, X_init, y_init, frange=(0,1), n_dim=3)</code></pre>
+                <p>Supported optimizers: <code>adam</code>, <code>adamw</code>, <code>sgd</code>, <code>rmsprop</code>, <code>lbfgs</code>.</p>
+
+                <h3 id="maitre">Phase 2: SIREN (Maitre et al.)</h3>
+                <p>Train a SIREN to approximate the <em>antiderivative</em>, then evaluate at hypercube corners.</p>
+                <pre><code>from skuld.siren import SirenIntegrator
+
+integrator = SirenIntegrator(
+    n_params=4,          # number of fixed parameters
+    n_int_vars=3,        # number of integration variables
+    hidden_sizes=[64, 64, 64],
+    omega_0=30.0,
+    output_scale=1.0,
+)
+
+history, norm_cache = integrator.train(
+    integrand_fn=integrand_fn,       # f(u, *params) -> torch.Tensor
+    param_sets=[(0,0,1,2), (1,1,2,3)],
+    n_epochs=8000,
+    n_per_param=1024,
+    lr=5e-4,
+)
+
+result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
+
+                <h3 id="wire">WIRE</h3>
+                <p>Wavelet Implicit Neural Representation using complex Gabor/Morlet wavelet activations.</p>
+                <pre><code>from skuld.wire import WireIntegrator
+
+integrator = WireIntegrator(
+    n_params=4,
+    n_int_vars=3,
+    entry_width=64,
+    n_blocks=3,
+    omega_0=10.0,
+    sigma_0=10.0,
+    output_scale=1.0,
+)
+
+history, norm_cache = integrator.train(
+    integrand_fn=integrand_fn,
+    param_sets=[(0,0,1,2), (1,1,2,3)],
+    n_epochs=8000,
+)
+
+result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
+
+                <h3 id="kan">KAN</h3>
+                <p>Kolmogorov-Arnold Network with learnable B-spline basis functions on each edge.</p>
+                <pre><code>from skuld.kan import KANIntegrator
+
+integrator = KANIntegrator(
+    n_params=4,
+    n_int_vars=3,
+    width=32,
+    depth=2,
+    G=8,          # B-spline intervals
+    k=3,          # B-spline degree (cubic)
+    output_scale=1.0,
+)
+
+history, norm_cache = integrator.train(
+    integrand_fn=integrand_fn,
+    param_sets=[(0,0,1,2), (1,1,2,3)],
+    n_epochs=8000,
+)
+
+result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
+
+                <h3 id="broknet">BrokNet</h3>
+                <p>Mixture-of-experts ensemble. Each SIREN expert is trained exclusively on one parameter set; deterministic routing via dict.</p>
+                <pre><code>from skuld.broknet import BrokNetIntegrator
+
+integrator = BrokNetIntegrator(
+    param_sets=[(0,0,1,2), (1,1,2,3)],  # one expert per set
+    n_int_vars=3,
+    hidden_sizes=[64, 128, 64],
+    omega_0=30.0,
+    output_scale=1.0,
+)
+
+history, norm_cache = integrator.train(
+    integrand_fn=integrand_fn,
+    n_epochs=8000,
+    n_per_expert=1024,
+)
+
+result = integrator.integrate(0, 0, 1, 2, norm_cache=norm_cache)</code></pre>
+
+                <h3>Common Integrator API</h3>
+                <p>All Phase 2 integrators share the same interface:</p>
+                <table>
+                    <thead>
+                        <tr><th>Method</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>train(integrand_fn, param_sets, ...)</code></td><td>Train the network. Returns <code>(history, norm_cache)</code>.</td></tr>
+                        <tr><td><code>integrate(params, norm_cache)</code></td><td>Evaluate integral via corner sum. Returns <code>float</code>.</td></tr>
+                        <tr><td><code>n_weights</code></td><td>Number of trainable parameters (property).</td></tr>
+                    </tbody>
+                </table>
+                <p>The <code>integrand_fn</code> signature is always <code>f(u: torch.Tensor, *params) -> torch.Tensor</code> where <code>u</code> has shape <code>(N, n_int_vars)</code>.</p>
+            </div>
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <p>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
+            &middot;
+            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
+            &middot;
+            <a href="license.html">License</a>
+        </p>
+    </footer>
 </body>
 </html>
