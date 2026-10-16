@@ -440,8 +440,8 @@ pre code {
 }
 
 .hero h1 {
-    max-width: 16ch;
-    margin: 22px 0 0;
+    max-width: 30ch;
+    margin: 0;
 }
 
 .hero .lede {
@@ -892,7 +892,7 @@ tbody tr:last-child td {
     }
 
     .hero h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
 
     .hero .lede {

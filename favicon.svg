@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>Skuld</title>
+  <!--
+    The alternating-sign corner sum over the unit hypercube: four cells,
+    two filled (+1) and two empty (-1). Legible down to 16px because it
+    relies on fill contrast alone, with no strokes thinner than 2px.
+  -->
+  <rect width="32" height="32" rx="6" fill="#ffffff"/>
+  <g>
+    <!-- top row: + - -->
+    <rect x="7"  y="7"  width="8" height="8" rx="1" fill="#0a0a0a"/>
+    <rect x="17" y="7"  width="8" height="8" rx="1" fill="#0a0a0a" opacity="0.18"/>
+    <!-- bottom row: - + -->
+    <rect x="7"  y="17" width="8" height="8" rx="1" fill="#0a0a0a" opacity="0.18"/>
+    <rect x="17" y="17" width="8" height="8" rx="1" fill="#0a0a0a"/>
+  </g>
+</svg>
