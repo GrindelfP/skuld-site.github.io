@@ -4,140 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentation — Skuld</title>
+    <meta name="description" content="API reference for Skuld: the Lloyd integrand-approximation pipeline, the Maître antiderivative integrators, data generation, scaling and device selection.">
+    <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="site-wrapper">
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <h1>Skuld</h1>
-                <span>v0.4.0 — Neural Numerical Integration</span>
-            </div>
-            <ul class="sidebar-nav">
-                <li><a href="index.html"><span class="icon">&#8962;</span> Home</a></li>
-                <li><a href="docs.html" class="active"><span class="icon">&#128214;</span> Documentation</a></li>
-                <li><a href="research.html"><span class="icon">&#128300;</span> Research</a></li>
-                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
-                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
-            </ul>
-            <div class="sidebar-section">Architectures</div>
-            <ul class="sidebar-nav">
-                <li><a href="#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd et al.)</a></li>
-                <li><a href="#maitre"><span class="icon">&#9679;</span> SIREN (Maître et al.)</a></li>
-                <li><a href="#wire"><span class="icon">&#9679;</span> WIRE</a></li>
-                <li><a href="#kan"><span class="icon">&#9679;</span> KAN</a></li>
-                <li><a href="#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
-            </ul>
-            <div class="sidebar-section">API</div>
-            <ul class="sidebar-nav">
-                <li><a href="#data-generation"><span class="icon">&#9679;</span> Data Generation</a></li>
-                <li><a href="#scaling"><span class="icon">&#9679;</span> Scaling</a></li>
-                <li><a href="#device"><span class="icon">&#9679;</span> Device</a></li>
-            </ul>
-        </aside>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">Skuld</span>
+                <span class="brand-version">0.4.0</span>
+            </a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="docs.html" aria-current="page">Documentation</a>
+                <a href="research.html">Research</a>
+                <a href="license.html">License</a>
+                <a href="author.html">Author</a>
+            </nav>
+        </div>
+    </header>
 
-        <main class="main-content">
-            <div class="page-header">
-                <div class="breadcrumb"><a href="index.html">Home</a> &raquo; Documentation</div>
-                <h2>Documentation</h2>
-                <p>Complete API reference for the Skuld library.</p>
-            </div>
+    <main class="site-main">
+        <div class="with-toc">
+            <aside class="toc">
+                <p class="toc-label">On this page</p>
+                <nav aria-label="Table of contents">
+                    <ol>
+                        <li><a href="#install">Installation</a></li>
+                        <li><a href="#lloyd">Integrand approximation</a></li>
+                        <li><a href="#maitre">Antiderivative approximation</a></li>
+                        <li><a href="#integrators">Integrators</a></li>
+                        <li><a href="#data">Data generation</a></li>
+                        <li><a href="#scaling">Scaling</a></li>
+                        <li><a href="#device">Device selection</a></li>
+                        <li><a href="#caveats">Caveats</a></li>
+                        <li><a href="#references">References</a></li>
+                    </ol>
+                </nav>
+            </aside>
 
-            <div class="page-content">
-                <h3>Installation</h3>
-                <p>From PyPI (recommended):</p>
+            <article class="prose-body">
+                <header class="page-head" style="padding: 72px 0 0; max-width: none;">
+                    <p class="crumbs"><a href="index.html">Home</a> &rsaquo; Documentation</p>
+                    <h1 style="margin-top: 14px;">Documentation</h1>
+                    <p class="lede">
+                        A reference for the library's two pipelines and the utilities they share.
+                        Every integrator answers the same three questions: what it is called, how
+                        it is constructed, and what <code>train()</code> returns.
+                    </p>
+                </header>
+
+                <h2 id="install">Installation</h2>
+                <p>From PyPI:</p>
                 <pre><code>pip install skuld-lib</code></pre>
-                <p>Or from source:</p>
+                <p>Or from a checkout of the repository:</p>
                 <pre><code>pip install -e skuld-lib/</code></pre>
-                <p>Dependencies: <code>torch</code>, <code>numpy</code>, <code>mpmath</code>, <code>scikit-learn</code>. Python &ge; 3.11 required.</p>
-                <p><a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">View on PyPI</a></p>
+                <p>
+                    Requires Python 3.11 or newer. Dependencies are <code>torch</code>,
+                    <code>numpy</code>, <code>mpmath</code> and <code>scikit-learn</code>.
+                </p>
 
-                <h3 id="device">Device Selection</h3>
-                <p>Device is selected automatically: CUDA if available, else MPS (Apple Silicon), else CPU. Override with:</p>
-                <pre><code>from skuld import set_global_device
-set_global_device("cpu")   # or "cuda" or "mps"</code></pre>
-
-                <h3 id="data-generation">Data Generation</h3>
-                <p>Five sampling strategies for generating training data:</p>
-                <table>
-                    <thead>
-                        <tr><th>Type</th><th>Description</th><th>n_samples meaning</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><code>"std"</code></td><td>Uniform random (Monte-Carlo)</td><td>Total rows</td></tr>
-                        <tr><td><code>"grd"</code></td><td>Uniform deterministic grid</td><td>Points per axis</td></tr>
-                        <tr><td><code>"log"</code></td><td>Logarithmically-spaced grid</td><td>Points per axis</td></tr>
-                        <tr><td><code>"mix"</code></td><td>Dense-near-lower + sparse-near-upper</td><td>Points per axis</td></tr>
-                        <tr><td><code>"exp"</code></td><td>Exponentially-biased random</td><td>Total rows</td></tr>
-                    </tbody>
-                </table>
-                <p>Strategies can be mixed per-dimension by passing a list:</p>
-                <pre><code>from skuld import generate_data
-
-X, y = generate_data(
-    dis_type=["std", "std", "exp", "grd"],
-    func=my_integrand,
-    lower=[0.0, 0.0, 0.0, 0.1],
-    upper=[1.0, 1.0, 50.0, 2.0],
-    n_samples=200,
-    n_dim=4,
-)</code></pre>
-
-                <h3 id="scaling">Scaling</h3>
-                <p>Min-max scaling to a known range (default <code>[0, 1]</code>):</p>
-                <pre><code>from skuld import scale_data, descale_result
-
-X_scaled, y_scaled = scale_data(X, y, frange=(0, 1))
-# ... train and integrate ...
-result = descale_result(nni_scaled, X, y, frange=(0, 1), n_dim=4, n_int_dims=3)</code></pre>
-
-                <h3 id="lloyd">MLP — Lloyd et al. Method</h3>
-                <p>This method approximates the <em>integrand</em> itself with a shallow multilayer perceptron (sigmoid activation). Once trained, the network is integrated analytically using polylogarithms — the integral becomes a closed-form expression evaluation rather than a numerical quadrature. This is particularly efficient when the same integrand must be evaluated over many different domains or parameter values, as the expensive training is done once and the evaluation is fast.</p>
-                <pre><code>from skuld import (generate_data, scale_data, split_data,
-                    init_model, NeuralNumericalIntegration, descale_result)
-
-# 1. Generate data
-X, y = generate_data("std", func, lower, upper, n_samples=1000, n_dim=3)
-
-# 2. Scale
-X, y = scale_data(X, y, frange=(0, 1))
-
-# 3. Split
-X_train, X_test, y_train, y_test = split_data(X, y, test_size=0.1, shuffle=True)
-
-# 4. Create model
-model = init_model(input_size=3, hidden_size=64)
-
-# 5. Compile
-model.compile(criterion=torch.nn.MSELoss(), optimizer_name="adam", learning_rate=1e-3)
-
-# 6. Train
-model.fit(X_train, y_train, epochs=5000)
-
-# 7. Integrate analytically
-result = NeuralNumericalIntegration.integrate(
-    model, alphas=[0,0,0], betas=[1,1,1], n_dims=3, theta=[0.5]
+                <h2 id="lloyd">Integrand approximation</h2>
+                <p>
+                    This pipeline fits a network to the integrand and then integrates that network
+                    in closed form, using polylogarithms. The expensive step — training — is paid
+                    once per integrand; every subsequent evaluation is an expression. That makes it
+                    a good fit when one integrand is to be integrated over many domains or
+                    parameter values.
+                </p>
+                <pre><code>import torch
+from skuld import (
+    generate_data, scale_data, split_data, init_model,
+    NeuralNumericalIntegration, descale_result,
 )
 
-# 8. Descale
-true_result = descale_result(result, X_init, y_init, frange=(0,1), n_dim=3)</code></pre>
-                <p>Supported optimizers: <code>adam</code>, <code>adamw</code>, <code>sgd</code>, <code>rmsprop</code>, <code>lbfgs</code>.</p>
+# 1. Sample the integrand over the domain of interest.
+X, y = generate_data(
+    dis_type="std",
+    func=integrand,
+    lower=[0.0, 0.0, 0.0],
+    upper=[1.0, 1.0, 1.0],
+    n_samples=1000,
+    n_dim=3,
+)
 
-                <h3 id="maitre">SIREN — Maître et al. Method</h3>
-                <p>This method takes a fundamentally different approach: instead of approximating the integrand, a SIREN (Sinusoidal Representation Network) is trained to approximate the <em>antiderivative</em> of the integrand. The network learns a function whose mixed partial derivatives match the integrand. Once trained, the integral is evaluated as an alternating-sign sum over the corners of the unit hypercube — no quadrature mesh is needed. The sinusoidal activation functions are particularly well-suited for this task because they can represent smooth, oscillatory functions and their derivatives are easy to compute via autograd.</p>
+# 2. Normalise inputs and outputs.
+X_scaled, y_scaled = scale_data(X, y, frange=(0, 1))
+
+# 3. Hold out a test split.
+X_train, X_test, y_train, y_test = split_data(
+    X_scaled, y_scaled, test_size=0.1, shuffle=True,
+)
+
+# 4. Build and configure the network.
+model = init_model(input_size=3, hidden_size=64)
+model.compile(
+    criterion=torch.nn.MSELoss(),
+    optimizer_name="adam",
+    learning_rate=1e-3,
+)
+
+# 5. Train on the scaled data.
+model.fit(X_train, y_train, epochs=5000)
+
+# 6. Integrate analytically, mapping the network back to real coordinates.
+result = NeuralNumericalIntegration.integrate(
+    model, alphas=[0, 0, 0], betas=[1, 1, 1], n_dims=3,
+)
+
+# 7. Undo the scaling.
+result = descale_result(result, X, y, frange=(0, 1), n_dim=3)</code></pre>
+                <div class="spec">
+                    <div class="spec-row">
+                        <span class="spec-key">model.compile(optimizer_name=...)</span>
+                        <span class="spec-val">One of <code>adam</code>, <code>adamw</code>, <code>sgd</code>, <code>rmsprop</code> or <code>lbfgs</code>.</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-key">descale_result(..., n_int_dims=...)</span>
+                        <span class="spec-val">Number of integration variables. Must match the value passed to <code>integrate()</code>, or the scaling is undone over the wrong axes.</span>
+                    </div>
+                </div>
+
+                <h2 id="maitre">Antiderivative approximation</h2>
+                <p>
+                    This pipeline takes the opposite approach. A network is trained so that its
+                    mixed partial derivatives match the integrand, and the integral is then read
+                    off as an alternating-sign sum over the 2<sup>n</sup> corners of the unit
+                    hypercube. There is no mesh to build, no quadrature rule to choose, and no
+                    closed form to derive — training is the whole cost, and evaluation is a
+                    handful of forward passes.
+                </p>
+                <p>The three steps are always the same, whatever the network:</p>
+                <ol>
+                    <li>Write the integrand on the unit cube as <code>f(u, *params)</code>.</li>
+                    <li>Construct an integrator and call <code>train()</code>.</li>
+                    <li>Call <code>integrate()</code> with a parameter set and the cache that <code>train()</code> returned.</li>
+                </ol>
                 <pre><code>from skuld.siren import SirenIntegrator
 
+def integrand(u, a, b, m, n):
+    # u has shape [N, n_int_vars]; the return must also have shape [N].
+    ...
+
 integrator = SirenIntegrator(
-    n_params=4,          # number of fixed parameters
-    n_int_vars=3,        # number of integration variables
+    n_params=4,
+    n_int_vars=3,
     hidden_sizes=[64, 64, 64],
     omega_0=30.0,
     output_scale=1.0,
 )
 
 history, norm_cache = integrator.train(
-    integrand_fn=integrand_fn,       # f(u, *params) -> torch.Tensor
-    param_sets=[(0,0,1,2), (1,1,2,3)],
+    integrand_fn=integrand,
+    param_sets=[(0, 0, 1, 2), (1, 1, 2, 3)],
     n_epochs=8000,
     n_per_param=1024,
     lr=5e-4,
@@ -145,101 +165,308 @@ history, norm_cache = integrator.train(
 
 result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
 
-                <h3 id="wire">WIRE</h3>
-                <p>Wavelet Implicit Neural Representation using complex Gabor/Morlet wavelet activations.</p>
-                <pre><code>from skuld.wire import WireIntegrator
+                <h2 id="integrators">Integrators</h2>
+                <p>
+                    Each entry below has the same shape. Constructor arguments vary; the method
+                    signatures do not.
+                </p>
+                <div class="table-wrap">
+                    <table>
+                        <caption>Integrators and their constructor arguments</caption>
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Import</th>
+                                <th>Constructor arguments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>SirenIntegrator</th>
+                                <td><code>skuld.siren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>CosirenIntegrator</th>
+                                <td><code>skuld.cosiren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>CosirenPSIntegrator</th>
+                                <td><code>skuld.cosiren_ps</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code>; learnable per-layer phase <code>phi</code></td>
+                            </tr>
+                            <tr>
+                                <th>WireIntegrator</th>
+                                <td><code>skuld.wire</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>entry_width</code>, <code>n_blocks</code>, <code>omega_0</code>, <code>sigma_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>KANIntegrator</th>
+                                <td><code>skuld.kan</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>width</code>, <code>depth</code>, <code>G</code> (spline intervals), <code>k</code> (spline degree), <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>SechirenIntegrator</th>
+                                <td><code>skuld.sechiren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code>; learnable <code>omega_0</code> and output scale</td>
+                            </tr>
+                            <tr>
+                                <th>SechirenISIntegrator</th>
+                                <td><code>skuld.sechiren_is</code></td>
+                                <td>As SECHIREN, plus <code>is_beta</code> and <code>is_alpha</code> for the sampling mixture</td>
+                            </tr>
+                            <tr>
+                                <th>GudermannianIntegrator</th>
+                                <td><code>skuld.gudermannian</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>GaussianIntegrator</th>
+                                <td><code>skuld.gaussian</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>SinhrenIntegrator</th>
+                                <td><code>skuld.sinhren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>MixirenIntegrator</th>
+                                <td><code>skuld.mixiren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, per-layer activations, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>TanhirenIntegrator</th>
+                                <td><code>skuld.tanhiren</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code>; gradient clipping at 5.0</td>
+                            </tr>
+                            <tr>
+                                <th>ConvIntegrator</th>
+                                <td><code>skuld.conv</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>channels</code>, <code>n_blocks</code>, <code>kernel_size</code>, <code>output_scale</code></td>
+                            </tr>
+                            <tr>
+                                <th>BrokNetIntegrator</th>
+                                <td><code>skuld.broknet</code></td>
+                                <td><code>param_sets</code> (one expert each), <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-integrator = WireIntegrator(
-    n_params=4,
-    n_int_vars=3,
-    entry_width=64,
-    n_blocks=3,
-    omega_0=10.0,
-    sigma_0=10.0,
-    output_scale=1.0,
-)
+                <div class="spec">
+                    <div class="spec-row">
+                        <span class="spec-key">train(integrand_fn, param_sets, n_epochs, n_per_param, lr)</span>
+                        <span class="spec-val">Returns <code>(history, norm_cache)</code> &mdash; except <code>SechirenIntegrator</code>, which returns a third element <code>epoch_data</code> with per-epoch timing.</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-key">integrate(params, norm_cache, device=None)</span>
+                        <span class="spec-val">Returns the integral as a float, computed from the corner sum. <code>BrokNetIntegrator.integrate</code> takes the parameters positionally instead.</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-key">n_weights</span>
+                        <span class="spec-val">Property giving the number of trainable parameters.</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-key">integrand_fn</span>
+                        <span class="spec-val">Signature <code>f(u: Tensor, *params) -&gt; Tensor</code>, where <code>u</code> has shape <code>[N, n_int_vars]</code> and the return has shape <code>[N]</code>.</span>
+                    </div>
+                </div>
 
-history, norm_cache = integrator.train(
-    integrand_fn=integrand_fn,
-    param_sets=[(0,0,1,2), (1,1,2,3)],
-    n_epochs=8000,
-)
-
-result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
-
-                <h3 id="kan">KAN</h3>
-                <p>Kolmogorov-Arnold Network with learnable B-spline basis functions on each edge.</p>
-                <pre><code>from skuld.kan import KANIntegrator
-
-integrator = KANIntegrator(
-    n_params=4,
-    n_int_vars=3,
-    width=32,
-    depth=2,
-    G=8,          # B-spline intervals
-    k=3,          # B-spline degree (cubic)
-    output_scale=1.0,
-)
-
-history, norm_cache = integrator.train(
-    integrand_fn=integrand_fn,
-    param_sets=[(0,0,1,2), (1,1,2,3)],
-    n_epochs=8000,
-)
-
-result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
-
-                <h3 id="broknet">BrokNet</h3>
-                <p>Mixture-of-experts ensemble. Each SIREN expert is trained exclusively on one parameter set; deterministic routing via dict.</p>
+                <h3>BrokNet</h3>
+                <p>
+                    BrokNet is a mixture of experts rather than a single network: each parameter set
+                    gets its own SIREN expert, and routing is a lookup rather than a learned gate.
+                    Because the expert count is fixed by <code>param_sets</code>, construction
+                    differs slightly from the other integrators.
+                </p>
                 <pre><code>from skuld.broknet import BrokNetIntegrator
 
 integrator = BrokNetIntegrator(
-    param_sets=[(0,0,1,2), (1,1,2,3)],  # one expert per set
+    param_sets=[(0, 0, 1, 2), (1, 1, 2, 3)],
     n_int_vars=3,
     hidden_sizes=[64, 128, 64],
     omega_0=30.0,
-    output_scale=1.0,
 )
 
 history, norm_cache = integrator.train(
-    integrand_fn=integrand_fn,
+    integrand_fn=integrand,
     n_epochs=8000,
     n_per_expert=1024,
 )
 
 result = integrator.integrate(0, 0, 1, 2, norm_cache=norm_cache)</code></pre>
 
-                <h3>Common Integrator API</h3>
-                <p>All Maître et al. method integrators share the same interface:</p>
-                <table>
-                    <thead>
-                        <tr><th>Method</th><th>Description</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><code>train(integrand_fn, param_sets, ...)</code></td><td>Train the network. Returns <code>(history, norm_cache)</code>.</td></tr>
-                        <tr><td><code>integrate(params, norm_cache)</code></td><td>Evaluate integral via corner sum. Returns <code>float</code>.</td></tr>
-                        <tr><td><code>n_weights</code></td><td>Number of trainable parameters (property).</td></tr>
-                    </tbody>
-                </table>
-                <p>The <code>integrand_fn</code> signature is always <code>f(u: torch.Tensor, *params) -> torch.Tensor</code> where <code>u</code> has shape <code>(N, n_int_vars)</code>.</p>
+                <h2 id="data">Data generation</h2>
+                <p>
+                    <code>generate_data</code> samples a function on a box. The meaning of
+                    <code>n_samples</code> depends on the strategy: grid-based strategies produce
+                    a Cartesian product with <code>n_samples<sup>n_dim</sup></code> rows, whereas
+                    the stochastic ones produce exactly <code>n_samples</code> rows.
+                </p>
+                <div class="table-wrap">
+                    <table>
+                        <caption>Sampling strategies</caption>
+                        <thead>
+                            <tr><th>Type</th><th>Behaviour</th><th>Row count</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>"std"</code></td><td>Uniform random (Monte Carlo)</td><td><code>n_samples</code></td></tr>
+                            <tr><td><code>"exp"</code></td><td>Exponentially biased random</td><td><code>n_samples</code></td></tr>
+                            <tr><td><code>"grd"</code></td><td>Uniform deterministic grid</td><td><code>n_samples<sup>n_dim</sup></code></td></tr>
+                            <tr><td><code>"log"</code></td><td>Logarithmically spaced grid</td><td><code>n_samples<sup>n_dim</sup></code></td></tr>
+                            <tr><td><code>"mix"</code></td><td>Dense near the lower bound, sparse near the upper</td><td><code>n_samples<sup>n_dim</sup></code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>
+                    Strategies can be mixed per dimension by passing a list, which is how
+                    integrands with a preferred logarithmic direction are usually set up:
+                </p>
+                <pre><code>X, y = generate_data(
+    dis_type=["std", "std", "exp", "grd"],
+    func=integrand,
+    lower=[0.0, 0.0, 0.0, 0.1],
+    upper=[1.0, 1.0, 50.0, 2.0],
+    n_samples=200,
+    n_dim=4,
+)</code></pre>
 
-                <h3>References</h3>
-                <ul>
-                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
-                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
-                </ul>
-            </div>
-        </main>
-    </div>
+                <h2 id="scaling">Scaling</h2>
+                <p>
+                    Neural integrators train far more reliably on normalised inputs and outputs.
+                    <code>scale_data</code> applies a min&ndash;max map into
+                    <code>frange</code>; <code>descale_result</code> inverts it once the integral
+                    has been computed.
+                </p>
+                <pre><code>from skuld import scale_data, descale_result
+
+X_scaled, y_scaled = scale_data(X, y, frange=(0, 1))
+
+# ... train and integrate in scaled coordinates ...
+
+result = descale_result(
+    result_scaled, X, y, frange=(0, 1), n_dim=4, n_int_dims=3,
+)</code></pre>
+
+                <h2 id="device">Device selection</h2>
+                <p>
+                    The device is chosen automatically: CUDA when present, otherwise MPS on Apple
+                    Silicon, otherwise CPU. Override it globally when a run needs a fixed device.
+                </p>
+                <pre><code>from skuld import set_global_device
+
+set_global_device("cpu")   # or "cuda" or "mps"</code></pre>
+                <p>
+                    Individual calls also accept a <code>device</code> argument, which takes
+                    precedence over the global setting.
+                </p>
+
+                <h2 id="caveats">Caveats</h2>
+                <p>
+                    Three behaviours of the current implementation are easy to trip over, and none
+                    of them raise.
+                </p>
+                <div class="note">
+                    <p><strong>Integrands must return shape <code>[N]</code>, not <code>[N, 1]</code>.</strong></p>
+                    <p>
+                        The loss compares a mixed partial of shape <code>[N]</code> against the
+                        integrand. An extra trailing dimension broadcasts the mean-squared error to
+                        <code>[N, N]</code>, so the loss is quietly wrong and training appears to
+                        proceed normally.
+                    </p>
+                </div>
+                <div class="note" style="margin-top: 26px;">
+                    <p><strong><code>n_int_vars</code> above 3 gives wrong answers, silently.</strong></p>
+                    <p>
+                        Every integrator trains against a mixed partial that is hardcoded to
+                        integration variables 0, 1 and 2, while <code>integrate()</code> honours
+                        <code>n_int_vars</code> correctly. At six variables the loss decreases
+                        happily and the corner sum is then read off a network trained on the wrong
+                        derivative.
+                    </p>
+                </div>
+                <div class="note" style="margin-top: 26px;">
+                    <p><strong><code>SechirenIntegrator.train()</code> returns three values.</strong></p>
+                    <p>
+                        It returns <code>(history, norm_cache, epoch_data)</code>, where
+                        <code>epoch_data</code> holds per-epoch timing. Every other integrator
+                        returns two. Callers that assume a fixed arity will fail on one class and
+                        work on the rest.
+                    </p>
+                </div>
+
+                <h2 id="references">References</h2>
+                <ol class="refs">
+                    <li>
+                        S. Lloyd, R. A. Irani and M. Ahmadi,
+                        &ldquo;Using Neural Networks for Fast Numerical Integration and
+                        Optimization,&rdquo; <em>IEEE Access</em>, vol. 8, pp. 84519&ndash;84531, 2020.
+                    </li>
+                    <li>
+                        D. Ma&icirc;tre,
+                        &ldquo;Multi-variable Integration with a Neural Network,&rdquo;
+                        <em>arXiv:2211.02834</em>, 2022.
+                    </li>
+                </ol>
+            </article>
+        </div>
+    </main>
 
     <footer class="site-footer">
-        <p>
-            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
-            &middot;
-            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
-            &middot;
+        <div class="site-footer-inner">
+            <span>Skuld &mdash; neural numerical integration</span>
+            <span class="footer-spacer"></span>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">PyPI</a>
             <a href="license.html">License</a>
-        </p>
+        </div>
     </footer>
+
+    <script>
+        // Highlight the TOC entry for the section currently in view.
+        (function () {
+            var links = Array.prototype.slice.call(
+                document.querySelectorAll(".toc a[href^='#']")
+            );
+            if (!links.length || !("IntersectionObserver" in window)) return;
+
+            var byId = {};
+            var targets = links.map(function (link) {
+                var el = document.querySelector(link.getAttribute("href"));
+                if (el) byId[link.getAttribute("href").slice(1)] = link;
+                return el;
+            }).filter(Boolean);
+
+            var visible = new Set();
+
+            function sync() {
+                var active = null;
+                for (var i = 0; i < targets.length; i++) {
+                    if (visible.has(targets[i])) active = targets[i];
+                }
+                // Nothing intersecting (short page, fast scroll): fall back to the last heading above the fold.
+                if (!active) {
+                    for (var j = 0; j < targets.length; j++) {
+                        if (targets[j].getBoundingClientRect().top < 100) active = targets[j];
+                    }
+                }
+                links.forEach(function (l) { l.classList.remove("is-active"); });
+                if (active && byId[active.id]) byId[active.id].classList.add("is-active");
+            }
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) visible.add(entry.target);
+                    else visible.delete(entry.target);
+                });
+                sync();
+            }, { rootMargin: "-80px 0px -60% 0px", threshold: 0 });
+
+            targets.forEach(function (t) { observer.observe(t); });
+            sync();
+        })();
+    </script>
 </body>
 </html>

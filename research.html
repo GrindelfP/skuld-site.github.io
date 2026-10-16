@@ -4,117 +4,237 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research — Skuld</title>
+    <meta name="description" content="The physics behind Skuld: the meson Feynman integral used as the target benchmark, the Genz test functions used as a characterisation benchmark, and how accuracy is measured.">
+    <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="site-wrapper">
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <h1>Skuld</h1>
-                <span>v0.4.0 — Neural Numerical Integration</span>
-            </div>
-            <ul class="sidebar-nav">
-                <li><a href="index.html"><span class="icon">&#8962;</span> Home</a></li>
-                <li><a href="docs.html"><span class="icon">&#128214;</span> Documentation</a></li>
-                <li><a href="research.html" class="active"><span class="icon">&#128300;</span> Research</a></li>
-                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
-                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">Skuld</span>
+                <span class="brand-version">0.4.0</span>
+            </a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="docs.html">Documentation</a>
+                <a href="research.html" aria-current="page">Research</a>
+                <a href="license.html">License</a>
+                <a href="author.html">Author</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <article class="prose-body">
+            <header class="page-head" style="padding: 72px 0 0; max-width: none;">
+                <p class="crumbs"><a href="index.html">Home</a> &rsaquo; Research</p>
+                <h1 style="margin-top: 14px;">Research</h1>
+                <p class="lede">
+                    What the library is actually being tested on, and how its answers are scored.
+                    This page describes the benchmarks; it deliberately does not publish accuracy
+                    tables, because those change with every experiment and go stale.
+                </p>
+            </header>
+
+            <h2 id="question">The question</h2>
+            <p>
+                Can a neural network compute a definite integral of a difficult
+                multi-dimensional function more accurately, or more cheaply, than classical
+                quadrature? Skuld exists to answer that with measurements rather than
+                intuition, which means every accuracy claim needs an integrand whose exact value
+                is either known or independently computed.
+            </p>
+            <p>
+                Two benchmarks are used, and they answer different questions. Neither substitutes
+                for the other.
+            </p>
+
+            <h2 id="target">Target benchmark: a meson Feynman integral</h2>
+            <p>
+                The primary benchmark is a real integral from a particle-physics amplitude. It has
+                no closed form; its value is obtained by nested adaptive quadrature with
+                <code>scipy.integrate.quad</code> at <code>epsabs = epsrel = 1e-9</code>. Being
+                the application the method exists to serve, its score is the one that matters
+                most.
+            </p>
+            <p>
+                The integrand depends on three integration variables and four discrete
+                parameters <code>(a, b, m, n)</code>. The variables are mapped onto the unit cube
+                <code>[0,1]&sup3;</code> by two substitutions:
+            </p>
+            <ul>
+                <li>
+                    A <strong>Korobov map</strong> on <code>u&#8321;</code> and
+                    <code>u&#8322;</code>, <code>x = u&sup2;(3 &minus; 2u)</code>, whose Jacobian
+                    <code>6u(1&minus;u)</code> vanishes at both endpoints and so concentrates
+                    sampling where the integral actually lives. The Feynman parameters are then
+                    <code>&alpha;&#8321; = x&#8321;</code> and
+                    <code>&alpha;&#8322; = (1 &minus; x&#8321;)&thinsp;x&#8322;</code>.
+                </li>
+                <li>
+                    A <strong>logarithmic substitution</strong> on <code>u&#8323;</code>,
+                    <code>t = exp(L&thinsp;u&#8323;) &minus; 1</code> with
+                    <code>L = log(1 + 80)</code>, which stretches <code>[0,1]</code> to the
+                    <code>[0, 80]</code> interval where the damping factor
+                    <code>exp(&minus;t&thinsp;D &minus; t&thinsp;R&sup2;/(1+t))</code> dies out.
+                </li>
             </ul>
-        </aside>
-
-        <main class="main-content">
-            <div class="page-header">
-                <div class="breadcrumb"><a href="index.html">Home</a> &raquo; Research</div>
-                <h2>Research</h2>
-                <p>Physics integrands, methods, and results.</p>
-            </div>
-
-            <div class="page-content">
-                <h3>Research Goal</h3>
-                <p>The project investigates whether neural networks can compute definite integrals of complex, multi-dimensional integrands more efficiently than traditional quadrature methods. Two fundamentally different approaches are explored:</p>
-                <ul>
-                    <li><strong>Lloyd et al. (2020)</strong> — Approximate the integrand with a shallow MLP (sigmoid activation), then integrate the network analytically using polylogarithms. The integral becomes a closed-form expression evaluation. This is particularly efficient when the same integrand must be evaluated over many different domains or parameter values, as the expensive training is done once and the evaluation is fast.</li>
-                    <li><strong>Maître et al. (2022)</strong> — Train a network to approximate the antiderivative directly, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed. The antiderivative is typically smoother than the integrand, making it easier for the network to approximate.</li>
-                </ul>
-
-                <h3>Physics Integrand</h3>
-                <p>The test integrand originates from a particle physics amplitude. It depends on three integration variables <code>(u1, u2, u3)</code> mapped to the unit cube <code>[0,1]^3</code> and four discrete parameters <code>(a, b, m, n)</code>:</p>
-                <ul>
-                    <li><code>a, b</code> — exponents on momentum fractions (0 or 1)</li>
-                    <li><code>m, n</code> — exponents on the Feynman parameter <code>t</code> (1 or 2 for m; 2 or 3 for n)</li>
-                </ul>
-                <p>The integrand combines a Korobov smooth mapping for <code>(u1, u2)</code>, a logarithmic substitution for <code>u3</code>, and an exponential damping factor <code>exp(-t*D - t/(1+t)*R2)</code> where <code>D</code> and <code>R2</code> are quadratic forms in the momentum fractions.</p>
-
-                <h3>Parameter Sets</h3>
-                <p>Eight parameter combinations are used as a benchmark suite:</p>
+            <p>
+                The remaining structure is what makes the integral hard: a factor
+                <code>&alpha;&#8321;<sup>a</sup> &alpha;&#8322;<sup>b</sup></code> that is
+                non-smooth whenever the exponent is non-zero, multiplied by
+                <code>t<sup>m</sup> / (1 + t)<sup>n</sup></code>, which is sharply peaked near
+                <code>t = 0</code>.
+            </p>
+            <div class="table-wrap">
                 <table>
+                    <caption>The eight benchmark parameter sets</caption>
                     <thead>
-                        <tr><th>a</th><th>b</th><th>m</th><th>n</th></tr>
+                        <tr><th>Set</th><th><code>a</code></th><th><code>b</code></th><th><code>m</code></th><th><code>n</code></th></tr>
                     </thead>
                     <tbody>
-                        <tr><td>0</td><td>0</td><td>1</td><td>2</td></tr>
-                        <tr><td>0</td><td>1</td><td>1</td><td>2</td></tr>
-                        <tr><td>1</td><td>0</td><td>1</td><td>2</td></tr>
-                        <tr><td>1</td><td>1</td><td>1</td><td>2</td></tr>
-                        <tr><td>0</td><td>0</td><td>2</td><td>3</td></tr>
-                        <tr><td>0</td><td>1</td><td>2</td><td>3</td></tr>
-                        <tr><td>1</td><td>0</td><td>2</td><td>3</td></tr>
-                        <tr><td>1</td><td>1</td><td>2</td><td>3</td></tr>
+                        <tr><th>I&#8321;</th><td>0</td><td>0</td><td>1</td><td>2</td></tr>
+                        <tr><th>I&#8322;</th><td>0</td><td>1</td><td>1</td><td>2</td></tr>
+                        <tr><th>I&#8323;</th><td>1</td><td>0</td><td>1</td><td>2</td></tr>
+                        <tr><th>I&#8324;</th><td>1</td><td>1</td><td>1</td><td>2</td></tr>
+                        <tr><th>I&#8325;</th><td>0</td><td>0</td><td>2</td><td>3</td></tr>
+                        <tr><th>I&#8326;</th><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+                        <tr><th>I&#8327;</th><td>1</td><td>0</td><td>2</td><td>3</td></tr>
+                        <tr><th>I&#8328;</th><td>1</td><td>1</td><td>2</td><td>3</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <p>
+                The two exponents <code>a</code> and <code>b</code> are what separate these sets:
+                a zero exponent gives a smooth integrand, a one gives a cusp at the boundary of the
+                simplex. Accuracy is reported per set, never averaged away.
+            </p>
 
-                <h3>Coordinate Transformations</h3>
-                <ul>
-                    <li><strong>Korobov mapping:</strong> <code>x = u^2 * (3 - 2u)</code> with Jacobian <code>6u(1-u)</code> — smooth, zero at endpoints.</li>
-                    <li><strong>Logarithmic substitution:</strong> <code>t = exp(L*u3) - 1</code> where <code>L = log(1 + T_MAX)</code>, <code>T_MAX = 80</code> — maps <code>[0,1]</code> to <code>[0, 80]</code>.</li>
-                </ul>
-
-                <h3>Reference Values</h3>
-                <p>Reference integrals are computed with <code>scipy.integrate.quad</code> using nested quadrature with <code>epsabs=epsrel=1e-9</code> and <code>limit=200-300</code>. These serve as ground truth for evaluating neural network accuracy.</p>
-
-                <h3>Results</h3>
-                <p>All architectures are trained on the same integrand and parameter sets. Accuracy is measured as the number of correct digits compared to the scipy reference:</p>
+            <h2 id="characterisation">Characterisation benchmark: the Genz test functions</h2>
+            <p>
+                A result on the meson integral says nothing about how a method behaves in general,
+                because that integrand has one shape and one set of difficulties. To measure the
+                method rather than the application, Skuld is also evaluated on the standard Genz
+                test integrands, each of which has a closed-form exact integral in arbitrary
+                dimension.
+            </p>
+            <div class="table-wrap">
                 <table>
+                    <caption>The five Genz function families in use</caption>
                     <thead>
-                        <tr><th>Architecture</th><th>Phase</th><th>Typical Correct Digits</th></tr>
+                        <tr><th>Function</th><th>Behaviour</th><th>Exact value</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td>MLP</td><td>Lloyd (integrand)</td><td>2-4</td></tr>
-                        <tr><td>SIREN</td><td>Maitre (antiderivative)</td><td>3-5</td></tr>
-                        <tr><td>WIRE</td><td>Maitre (antiderivative)</td><td>2-4</td></tr>
-                        <tr><td>KAN</td><td>Maitre (antiderivative)</td><td>2-4</td></tr>
-                        <tr><td>BrokNet</td><td>Maitre (antiderivative)</td><td>3-5</td></tr>
+                        <tr><th>Oscillatory</th><td>Cosine factor of growing frequency along one axis</td><td>Closed form in <code>n</code></td></tr>
+                        <tr><th>Product peak</th><td>A product of shifted Lorentzians</td><td>Closed form in <code>n</code></td></tr>
+                        <tr><th>Corner peak</th><td>A ridge concentrated at one vertex of the cube</td><td><code>1 / (n! (n+1))</code></td></tr>
+                        <tr><th>Gaussian</th><td>A product of narrow Gaussians on a ridge</td><td>Closed form in <code>n</code></td></tr>
+                        <tr><th>C&#8304; continuous</th><td>A piecewise function with a jump in a derivative</td><td>Closed form in <code>n</code>, by separability</td></tr>
                     </tbody>
                 </table>
-                <p>SIREN and BrokNet tend to perform best on this integrand due to the sinusoidal activation's ability to represent the oscillatory structure of the antiderivative. The Maitre approach generally outperforms Lloyd for this class of integrands because the antiderivative is smoother than the integrand itself.</p>
-
-                <h3>Training Configuration</h3>
-                <ul>
-                    <li><strong>Optimizer:</strong> Adam (SIREN, KAN, BrokNet) or AdamW (WIRE)</li>
-                    <li><strong>Scheduler:</strong> CosineAnnealingLR or OneCycleLR</li>
-                    <li><strong>Loss:</strong> MSELoss (SIREN, WIRE, BrokNet) or HuberLoss (KAN)</li>
-                    <li><strong>Epochs:</strong> 5000-8000</li>
-                    <li><strong>Samples per parameter set:</strong> 512-1024</li>
-                    <li><strong>Gradient clipping:</strong> max_norm 3.0-5.0</li>
-                </ul>
-
-                <h3>References</h3>
-                <ul>
-                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
-                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
-                </ul>
             </div>
-        </main>
-    </div>
+            <p>
+                These exact values are themselves verified before use, against both
+                <code>scipy.integrate.cubature</code> and arbitrary-precision
+                <code>mpmath</code> &mdash; on canonical parameters and on deliberately asymmetric
+                ones, since a broadcasting bug is invisible when every parameter happens to be
+                equal.
+            </p>
+            <p>
+                Two of the five are traps worth knowing about, and both behave the same way for
+                every method:
+            </p>
+            <div class="note">
+                <p>
+                    <strong>Oscillatory</strong> has an exact value near zero at the canonical
+                    parameters, so its <em>relative</em> accuracy looks terrible even when the
+                    absolute error is negligible. That is a property of the function, not a
+                    ranking signal.
+                </p>
+            </div>
+            <div class="note" style="margin-top: 26px;">
+                <p>
+                    <strong>Corner peak</strong> integrates to <code>1/24</code> in three
+                    dimensions. An absolute error that looks excellent can still be a large
+                    relative error, which is the whole argument for scoring on relative digits.
+                </p>
+            </div>
+
+            <h2 id="measurement">How accuracy is measured</h2>
+            <p>
+                Every number reported anywhere in this project is <strong>correct digits</strong>,
+                defined as
+            </p>
+            <pre><code>correct_digits = -log10(|estimate - exact| / |exact|)</code></pre>
+            <p>
+                always <em>relative</em>, never absolute. The exact values across the Genz set span
+                <code>4&times;10<sup>&minus;2</sup></code> to 1, so an absolute metric would rank
+                methods by the magnitude of the answer rather than by their quality.
+            </p>
+            <p>
+                Results are reported three ways, and the third matters as much as the first:
+            </p>
+            <ul>
+                <li><strong>Per-integral digits.</strong> Each parameter set's own score is recorded, so the full distribution is always available and never summarised away.</li>
+                <li><strong>Min, mean and max</strong> across parameter sets. The minimum shows the worst case; the mean alone would hide a method that is excellent on seven integrals and useless on the eighth.</li>
+                <li><strong>Per-seed figures.</strong> A single run is an upper bound, not a measurement. Rankings that matter are computed over several seeds, because seed-to-seed variance has proved comparable to the difference between configurations.</li>
+            </ul>
+
+            <h2 id="practice">Experimental practice</h2>
+            <p>
+                The repository separates <em>library</em> from <em>research</em>: architectures
+                live in the installable package, and every experiment is a standalone script
+                under <code>research/experiments/</code> that writes to a mirrored results
+                directory. Results are never written by hand into an experiment's source folder.
+            </p>
+            <p>
+                Negative results are kept, not deleted. Several plausible ideas have been tried and
+                measured as not helping &mdash; importance sampling of the training data, training
+                on the antiderivative directly, corner-focused sampling, a polynomial-chaos basis
+                instead of a network &mdash; and the reasons they failed are recorded alongside the
+                results, because a method's failure modes are as informative as its successes.
+            </p>
+            <p class="muted" style="font-size: 0.875rem;">
+                The experiment scripts, their results and the analysis reports are all in the
+                <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">repository</a>.
+            </p>
+
+            <h2 id="references">References</h2>
+            <ol class="refs">
+                <li>
+                    S. Lloyd, R. A. Irani and M. Ahmadi,
+                    &ldquo;Using Neural Networks for Fast Numerical Integration and
+                    Optimization,&rdquo; <em>IEEE Access</em>, vol. 8, pp. 84519&ndash;84531, 2020.
+                </li>
+                <li>
+                    D. Ma&icirc;tre,
+                    &ldquo;Multi-variable Integration with a Neural Network,&rdquo;
+                    <em>arXiv:2211.02834</em>, 2022.
+                </li>
+                <li>
+                    A. C. Genz,
+                    &ldquo;Testing the Accuracy of a Product Formula for the Numerical
+                    Integration of Multidimensional Functions,&rdquo; in
+                    <em>Numerical Integration of Multidimensional Analytic Functions</em>,
+                    1984.
+                </li>
+                <li>
+                    A. C. Genz, &ldquo;Numerical Integration Using Multilevel Techniques&rdquo;
+                    <em>SIAM Journal on Scientific Computing</em>, vol. 8, no. 1, pp. 1&ndash;8, 1987.
+                </li>
+            </ol>
+        </article>
+    </main>
 
     <footer class="site-footer">
-        <p>
-            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
-            &middot;
-            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
-            &middot;
+        <div class="site-footer-inner">
+            <span>Skuld &mdash; neural numerical integration</span>
+            <span class="footer-spacer"></span>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">PyPI</a>
             <a href="license.html">License</a>
-        </p>
+        </div>
     </footer>
 </body>
 </html>

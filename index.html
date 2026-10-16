@@ -4,144 +4,223 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skuld — Neural Numerical Integration</title>
-    <meta name="description" content="Skuld is a neural network based numerical integration library supporting both integrand approximation and antiderivative approximation approaches.">
+    <meta name="description" content="Skuld is a Python library that computes definite integrals with neural networks, using either integrand approximation or antiderivative approximation.">
+    <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/jbmono-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="site-wrapper">
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <h1>Skuld</h1>
-                <span>v0.4.0 — Neural Numerical Integration</span>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">Skuld</span>
+                <span class="brand-version">0.4.0</span>
+            </a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="docs.html">Documentation</a>
+                <a href="research.html">Research</a>
+                <a href="license.html">License</a>
+                <a href="author.html">Author</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="hero">
+            <p class="eyebrow">Neural numerical integration</p>
+            <h1>Integrals as trained weights.</h1>
+            <p class="lede">
+                Skuld computes definite integrals of multi-dimensional functions using neural
+                networks. Instead of sampling a quadrature mesh, it either learns the integrand and
+                integrates it analytically, or learns the antiderivative and reads the answer off
+                the corners of a hypercube.
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="docs.html">
+                    Read the docs
+                    <span class="btn-arrow" aria-hidden="true">&rarr;</span>
+                </a>
+                <a class="btn" href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">
+                    PyPI
+                </a>
+                <a class="btn" href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">
+                    Source
+                </a>
             </div>
-            <ul class="sidebar-nav">
-                <li><a href="index.html" class="active"><span class="icon">&#8962;</span> Home</a></li>
-                <li><a href="docs.html"><span class="icon">&#128214;</span> Documentation</a></li>
-                <li><a href="research.html"><span class="icon">&#128300;</span> Research</a></li>
-                <li><a href="license.html"><span class="icon">&#128220;</span> License</a></li>
-                <li><a href="author.html"><span class="icon">&#128100;</span> Author</a></li>
-            </ul>
-            <div class="sidebar-section">Architectures</div>
-            <ul class="sidebar-nav">
-                <li><a href="docs.html#lloyd"><span class="icon">&#9679;</span> MLP (Lloyd et al.)</a></li>
-                <li><a href="docs.html#maitre"><span class="icon">&#9679;</span> SIREN (Maître et al.)</a></li>
-                <li><a href="docs.html#wire"><span class="icon">&#9679;</span> WIRE</a></li>
-                <li><a href="docs.html#kan"><span class="icon">&#9679;</span> KAN</a></li>
-                <li><a href="docs.html#broknet"><span class="icon">&#9679;</span> BrokNet</a></li>
-            </ul>
-        </aside>
+        </section>
 
-        <main class="main-content">
-            <section class="hero">
-                <h2>Skuld</h2>
-                <p>A Python library that uses neural networks to compute definite integrals analytically — no quadrature, no mesh, just trained weights and corner sums.</p>
-                <div class="hero-badges">
-                    <span class="badge badge-blue">Python &ge; 3.11</span>
-                    <span class="badge badge-green">MIT-like License</span>
-                    <span class="badge badge-orange">v0.4.0</span>
-                    <span class="badge badge-purple">5 Architectures</span>
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-head">
+                    <h2>Two methods</h2>
+                    <p>
+                        They are independent approaches, not stages of one pipeline. Either can be
+                        used on its own; which one suits a problem depends on the integrand.
+                    </p>
                 </div>
-            </section>
-
-            <div class="grid-2">
-                <div class="card">
-                    <h3>Two Methods</h3>
-                    <p><strong>Lloyd et al. (2020)</strong> — Approximate the <em>integrand</em> with a shallow MLP (sigmoid activation), then integrate the network analytically using polylogarithms. The integral becomes a closed-form expression evaluation.</p>
-                    <p><strong>Maître et al. (2022)</strong> — Train a network to approximate the <em>antiderivative</em>, then evaluate the integral as an alternating-sign sum over the corners of the unit hypercube. No quadrature mesh is needed.</p>
-                </div>
-                <div class="card">
-                    <h3>Five Architectures</h3>
-                    <p>The library provides a unified API across MLP, SIREN, WIRE, KAN, and BrokNet (mixture-of-experts), so you can switch architectures without changing your experiment code.</p>
-                </div>
-            </div>
-
-            <h3 style="margin: 1.5rem 0 1rem;">Supported Architectures</h3>
-            <div class="grid-3">
-                <div class="arch-card">
-                    <div class="tag">Lloyd et al.</div>
-                    <h3>MLP</h3>
-                    <p>Classic multilayer perceptron with sigmoid activation. Approximates the integrand; integration via polylogarithms.</p>
-                </div>
-                <div class="arch-card">
-                    <div class="tag">Maître et al.</div>
-                    <h3>SIREN</h3>
-                    <p>Sinusoidal representation network. Approximates the antiderivative; evaluated via corner-sum over the unit hypercube.</p>
-                </div>
-                <div class="arch-card">
-                    <div class="tag">Maître et al.</div>
-                    <h3>WIRE</h3>
-                    <p>Wavelet implicit neural representation using complex Gabor/Morlet wavelet activations with Gaussian envelope.</p>
-                </div>
-                <div class="arch-card">
-                    <div class="tag">Maître et al.</div>
-                    <h3>KAN</h3>
-                    <p>Kolmogorov-Arnold Network with learnable B-spline basis functions on each edge. Stable higher-order autograd.</p>
-                </div>
-                <div class="arch-card">
-                    <div class="tag">Maître et al.</div>
-                    <h3>BrokNet</h3>
-                    <p>Mixture-of-experts ensemble. Each SIREN expert is trained exclusively on one parameter set; deterministic routing.</p>
-                </div>
-                <div class="arch-card">
-                    <div class="tag">Infrastructure</div>
-                    <h3>Data &amp; Scaling</h3>
-                    <p>Five sampling strategies (uniform, grid, log, mixed, exponential) with per-dimension mixing. Min-max scaling for the NNI pipeline.</p>
+                <div class="features">
+                    <div class="feature">
+                        <span class="feature-index">01</span>
+                        <h3>Approximate the integrand <span class="feature-tag">Lloyd et al. 2020</span></h3>
+                        <p>
+                            Fit a shallow MLP to the integrand itself, then integrate the network
+                            analytically using polylogarithms. Evaluation becomes a closed-form
+                            expression, which pays off when one integrand is evaluated over many
+                            domains or parameter values — training happens once.
+                        </p>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-index">02</span>
+                        <h3>Approximate the antiderivative <span class="feature-tag">Maître et al. 2022</span></h3>
+                        <p>
+                            Train a network so its mixed partial derivatives match the integrand,
+                            then evaluate the integral as an alternating-sign sum over the corners
+                            of the unit hypercube. There is no mesh and no quadrature rule — only
+                            2<sup>n</sup> evaluations of the trained network.
+                        </p>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <h3 style="margin: 1.5rem 0 1rem;">Installation</h3>
-            <pre><code>pip install skuld-lib</code></pre>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Available on <a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">PyPI</a>. Or install from source:</p>
-            <pre><code>pip install -e skuld-lib/</code></pre>
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-head">
+                    <h2>Install</h2>
+                    <p>
+                        Python 3.11 or newer. Depends on <code>torch</code>, <code>numpy</code>,
+                        <code>mpmath</code> and <code>scikit-learn</code>.
+                    </p>
+                </div>
+                <div class="install">
+                    <div class="install-cell">
+                        <span class="eyebrow">From PyPI</span>
+                        <pre><code>pip install skuld-lib</code></pre>
+                    </div>
+                    <div class="install-cell">
+                        <span class="eyebrow">From source</span>
+                        <pre><code>pip install -e skuld-lib/</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            <h3 style="margin: 1.5rem 0 1rem;">Quick Start</h3>
-            <pre><code>from skuld.siren import SirenIntegrator
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-head">
+                    <h2>Quick start</h2>
+                    <p>
+                        Every integrator in the library shares the same three-step interface, so
+                        swapping SIREN for WIRE or KAN does not change the surrounding code.
+                    </p>
+                </div>
+                <pre><code>from skuld.siren import SirenIntegrator
 
-# Define integrand in unit cube: f(u, *params)
+# An integrand on the unit cube: f(u, *params) -&gt; Tensor of shape [N]
 def integrand(u, a, b, m, n):
-    # ... your integrand here ...
-    return f
+    ...
 
-# Create integrator and train
-integrator = SirenIntegrator(n_params=4, n_int_vars=3)
+integrator = SirenIntegrator(
+    n_params=4,
+    n_int_vars=3,
+    hidden_sizes=[64, 64, 64],
+    omega_0=30.0,
+)
+
 history, norm_cache = integrator.train(
     integrand_fn=integrand,
-    param_sets=[(0,0,1,2), (1,1,2,3)],
+    param_sets=[(0, 0, 1, 2), (1, 1, 2, 3)],
     n_epochs=8000,
 )
 
-# Evaluate integral for a specific parameter set
 result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
+                <p class="muted" style="font-size: 0.875rem;">
+                    A full reference for every integrator, including constructor arguments and
+                    sampling strategies, is on the <a href="docs.html">documentation page</a>.
+                </p>
+            </div>
+        </section>
 
-            <div class="card" style="margin-top: 1.5rem;">
-                <h3>Key Facts</h3>
-                <ul class="feature-list">
-                    <li>Automatic device selection: CUDA, MPS (Apple Silicon), or CPU</li>
-                    <li>No quadrature meshes — integration is a corner-sum evaluation</li>
-                    <li>Analytic integration via polylogarithms (Lloyd) or corner sums (Maitre)</li>
-                    <li>Parametric integrands supported via <code>theta</code> / <code>param_sets</code></li>
-                    <li>All architectures share the same <code>train()</code> / <code>integrate()</code> API</li>
-                </ul>
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-head">
+                    <h2>Architectures</h2>
+                    <p>
+                        The antiderivative method is not tied to one network. Skuld implements a
+                        range of activations and structures, including a custom mixture-of-experts
+                        ensemble and a purely convolutional variant.
+                    </p>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <caption>Integrators shipped in skuld-lib</caption>
+                        <thead>
+                            <tr>
+                                <th>Integrator</th>
+                                <th>Import</th>
+                                <th>Network</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><th>MLP</th><td><code>skuld</code></td><td>Shallow perceptron with polylogarithmic integration (Lloyd et al.)</td></tr>
+                            <tr><th>SIREN</th><td><code>skuld.siren</code></td><td>Sinusoidal representation network</td></tr>
+                            <tr><th>COSIREN</th><td><code>skuld.cosiren</code></td><td>Cosine-activated SIREN variant</td></tr>
+                            <tr><th>COSIREN-PS</th><td><code>skuld.cosiren_ps</code></td><td>Cosine activation with a learnable per-layer phase shift</td></tr>
+                            <tr><th>WIRE</th><td><code>skuld.wire</code></td><td>Wavelet implicit representation with a Morlet wavelet activation</td></tr>
+                            <tr><th>KAN</th><td><code>skuld.kan</code></td><td>Kolmogorov&ndash;Arnold network with learnable B-spline edges</td></tr>
+                            <tr><th>SECHIREN</th><td><code>skuld.sechiren</code></td><td>Hyperbolic-secant activation</td></tr>
+                            <tr><th>SECHIREN-IS</th><td><code>skuld.sechiren_is</code></td><td>SECHIREN with importance-sampled training data</td></tr>
+                            <tr><th>GUDERMANIAN</th><td><code>skuld.gudermannian</code></td><td>Gudermannian activation</td></tr>
+                            <tr><th>GAUSSIAN</th><td><code>skuld.gaussian</code></td><td>Gaussian activation</td></tr>
+                            <tr><th>SINHREN</th><td><code>skuld.sinhren</code></td><td>Hyperbolic-sine activation with frequency scaling</td></tr>
+                            <tr><th>MIXIREN</th><td><code>skuld.mixiren</code></td><td>Mixed activation stack, sech&ndash;sin&ndash;sech</td></tr>
+                            <tr><th>TANHIREN</th><td><code>skuld.tanhiren</code></td><td>Tanh activation with frequency scaling</td></tr>
+                            <tr><th>CONV</th><td><code>skuld.conv</code></td><td>Convolutional antiderivative, no fully-connected layers</td></tr>
+                            <tr><th>BrokNet</th><td><code>skuld.broknet</code></td><td>Mixture of experts, one SIREN per parameter set</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted" style="font-size: 0.875rem;">
+                    Not every architecture is equally good at this task. Measured accuracy on a
+                    particle-physics integrand and on the Genz test functions is reported in the
+                    <a href="research.html">research notes</a> and in the repository.
+                </p>
             </div>
-            <div class="card" style="margin-top: 1.5rem;">
-                <h3>References</h3>
-                <p style="font-size: 0.9rem;">The two methods used in this library are described in:</p>
-                <ul style="font-size: 0.9rem; color: var(--text-secondary); margin-left: 1.5rem;">
-                    <li>S. Lloyd, R. A. Irani, and M. Ahmadi, "Using Neural Networks for Fast Numerical Integration and Optimization," <em>IEEE Access</em>, vol. 8, pp. 84519–84531, 2020.</li>
-                    <li>D. Maître, "Multi-variable Integration with a Neural Network," <em>arXiv:2211.02834</em>, 2022.</li>
-                </ul>
+        </section>
+
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-head">
+                    <h2>References</h2>
+                    <p>
+                        The two methods are described in the following papers, which Skuld
+                        implements rather than rederives.
+                    </p>
+                </div>
+                <ol class="refs">
+                    <li>
+                        S. Lloyd, R. A. Irani and M. Ahmadi,
+                        &ldquo;Using Neural Networks for Fast Numerical Integration and
+                        Optimization,&rdquo; <em>IEEE Access</em>, vol. 8, pp. 84519&ndash;84531, 2020.
+                    </li>
+                    <li>
+                        D. Ma&icirc;tre,
+                        &ldquo;Multi-variable Integration with a Neural Network,&rdquo;
+                        <em>arXiv:2211.02834</em>, 2022.
+                    </li>
+                </ol>
             </div>
-        </main>
-    </div>
+        </section>
+    </main>
 
     <footer class="site-footer">
-        <p>
-            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub Repository</a>
-            &middot;
-            <a href="https://github.com/GrindelfP" target="_blank" rel="noopener">Author</a>
-            &middot;
+        <div class="site-footer-inner">
+            <span>Skuld &mdash; neural numerical integration</span>
+            <span class="footer-spacer"></span>
+            <a href="https://github.com/GrindelfP/project-skuld" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://pypi.org/project/skuld-lib/" target="_blank" rel="noopener">PyPI</a>
             <a href="license.html">License</a>
-        </p>
+        </div>
     </footer>
 </body>
 </html>
