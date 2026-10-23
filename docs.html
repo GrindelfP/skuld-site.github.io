@@ -252,6 +252,11 @@ result = integrator.integrate((0, 0, 1, 2), norm_cache=norm_cache)</code></pre>
                                 <td><code>skuld.broknet</code></td>
                                 <td><code>param_sets</code> (one expert each), <code>n_int_vars</code>, <code>hidden_sizes</code>, <code>omega_0</code>, <code>output_scale</code></td>
                             </tr>
+                            <tr>
+                                <th>AenTropIntegrator</th>
+                                <td><code>skuld.aentrop</code></td>
+                                <td><code>n_params</code>, <code>n_int_vars</code>, <code>n_pieces</code>, <code>tau_start</code>, <code>tau_end</code>; corner-sum loss, temperature annealing</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -298,6 +303,38 @@ history, norm_cache = integrator.train(
 )
 
 result = integrator.integrate(0, 0, 1, 2, norm_cache=norm_cache)</code></pre>
+
+                <h3>AenTrop (tropical max-plus)</h3>
+                <p>
+                    AenTrop uses a piecewise-linear convex antiderivative built from the maximum
+                    of affine functions, smoothed with log-sum-exp. The temperature <code>tau</code>
+                    is annealed from <code>tau_start</code> to <code>tau_end</code> during training.
+                    The loss is computed directly on the corner-sum estimate, avoiding the
+                    train/eval mismatch of mixed-partial training.
+                </p>
+                <pre><code>from skuld.aentrop import AenTropIntegrator
+
+def integrand(u, a, b, m, n):
+    # u has shape [N, n_int_vars]; return shape [N]
+    ...
+
+integrator = AenTropIntegrator(
+    n_params=4,
+    n_int_vars=3,
+    n_pieces=12,
+    tau_start=1.0,
+    tau_end=0.01,
+)
+
+history = integrator.train(
+    integrand_fn=integrand,
+    param_sets=[(0, 0, 1, 2), (1, 1, 2, 3)],
+    targets={(0, 0, 1, 2): 1.0243, (1, 1, 2, 3): 0.0961},  # exact integrals
+    n_epochs=16000,
+    lr=1e-3,
+)
+
+result = integrator.integrate((0, 0, 1, 2), tau=0.01)</code></pre>
 
                 <h2 id="data">Data generation</h2>
                 <p>
@@ -395,6 +432,15 @@ set_global_device("cpu")   # or "cuda" or "mps"</code></pre>
                         <code>epoch_data</code> holds per-epoch timing. Every other integrator
                         returns two. Callers that assume a fixed arity will fail on one class and
                         work on the rest.
+                    </p>
+                </div>
+                <div class="note" style="margin-top: 26px;">
+                    <p><strong><code>AenTropIntegrator.train()</code> requires a <code>targets</code> dict.</strong></p>
+                    <p>
+                        Because AenTrop trains directly on the corner-sum loss, it needs the exact
+                        integral values for each parameter set during training. Pass them as
+                        <code>targets={param_tuple: exact_value}</code>. This differs from all other
+                        integrators, which only need the integrand function.
                     </p>
                 </div>
 
