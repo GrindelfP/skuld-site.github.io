@@ -339,9 +339,12 @@ result = integrator.integrate((0, 0, 1, 2), tau=0.01)</code></pre>
                 <h2 id="data">Data generation</h2>
                 <p>
                     <code>generate_data</code> samples a function on a box. The meaning of
-                    <code>n_samples</code> depends on the strategy: grid-based strategies produce
-                    a Cartesian product with <code>n_samples<sup>n_dim</sup></code> rows, whereas
-                    the stochastic ones produce exactly <code>n_samples</code> rows.
+                    <code>n_samples</code> depends on how the strategy is given. With a single
+                    strategy string it is the total row count: stochastic strategies produce
+                    exactly <code>n_samples</code> rows, and grid strategies round it up to a
+                    perfect <code>n_dim</code>-th power. With a per-dimension list, stochastic
+                    dimensions share <code>n_samples</code> rows and every grid dimension adds
+                    <code>n_samples</code> points, crossed together.
                 </p>
                 <div class="table-wrap">
                     <table>
@@ -413,16 +416,6 @@ set_global_device("cpu")   # or "cuda" or "mps"</code></pre>
                         integrand. An extra trailing dimension broadcasts the mean-squared error to
                         <code>[N, N]</code>, so the loss is quietly wrong and training appears to
                         proceed normally.
-                    </p>
-                </div>
-                <div class="note" style="margin-top: 26px;">
-                    <p><strong><code>n_int_vars</code> above 3 gives wrong answers, silently.</strong></p>
-                    <p>
-                        Every integrator trains against a mixed partial that is hardcoded to
-                        integration variables 0, 1 and 2, while <code>integrate()</code> honours
-                        <code>n_int_vars</code> correctly. At six variables the loss decreases
-                        happily and the corner sum is then read off a network trained on the wrong
-                        derivative.
                     </p>
                 </div>
                 <div class="note" style="margin-top: 26px;">
